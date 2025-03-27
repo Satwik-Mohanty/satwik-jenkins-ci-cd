@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+ tools {
+        maven 'Maven 3.9.9'  // Name set in Global Tool Configuration
+    }
+
     stages {
         stage('Checkout') {
             steps {
