@@ -41,8 +41,6 @@ pipeline {
         stage('Deploy to Staging') {
             steps {
                 script {
-                       sh 'git fetch --all'
-                       sh 'git checkout main'
                     if (env.BRANCH_NAME == 'main') {
                         echo '✅ Deploying to Staging...'
                         sh 'cp target/*.jar /tmp/staging-app.jar'
@@ -57,8 +55,6 @@ pipeline {
         stage('Deploy to Production') {
             steps {
                 script {
-                     sh 'git fetch --all'
-                     sh 'git checkout main'
                     if (env.BRANCH_NAME == 'main') {
                         echo '✅ Deploying to Production...'
                         sh 'cp target/*.jar /tmp/production-app.jar'
