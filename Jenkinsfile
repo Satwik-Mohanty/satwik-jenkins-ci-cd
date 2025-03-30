@@ -70,8 +70,9 @@ pipeline {
             steps {
                 script {
                     def fileExistsProd = sh(script: "[ -f /tmp/production-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
-                    def fileExistsProd = sh(script: "[ -f /tmp/staging-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
-                    echo "JAR File Status: ${fileExists}"
+                    def fileExistsStaging = sh(script: "[ -f /tmp/staging-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
+                    echo "JAR File Status in Production: ${fileExistsProd}"
+                    echo "JAR File Status in Staging: ${fileExistsStaging}"
                 }
             }
         }
