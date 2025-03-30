@@ -65,6 +65,16 @@ pipeline {
                 }
             }
         }
+
+        stage('Check JAR File') {
+            steps {
+                script {
+                    def fileExistsProd = sh(script: "[ -f /tmp/production-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
+                    def fileExistsProd = sh(script: "[ -f /tmp/staging-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
+                    echo "JAR File Status: ${fileExists}"
+                }
+            }
+        }
     }
 
     post {
