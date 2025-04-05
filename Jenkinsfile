@@ -1,66 +1,60 @@
 pipeline {
     agent any
+
     tools {
-        maven 'Maven 3.9.9'  // Ensure Maven is configured in Jenkins Global Tool Configuration
+        maven 'Maven 3.9.9'
+    }
+
+    environment {
+        BRANCH_NAME = "${env.BRANCH_NAME}"
     }
 
     stages {
         stage('Checkout') {
             steps {
-        script {
-            checkout([
-                $class: 'GitSCM',
-                branches: [[name: '*/main']],  // Ensure it's set to the correct branch
-                userRemoteConfigs: [[url: 'https://github.com/Satwik-Mohanty/satwik-jenkins-ci-cd']]
-            ])
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${env.BRANCH_NAME}"]],
+                    userRemoteConfigs: [[url: 'https://github.com/Satwik-Mohanty/satwik-jenkins-ci-cd']]
+                ])
+            }
         }
-    }
-        }
-
-        stage('Get Branch Name') {
-    steps {
-        script {
-            env.ACTUAL_BRANCH = sh(script: "git rev-parse --abbrev-ref main", returnStdout: true).trim()
-            echo "🟢 Detected Branch: ${env.ACTUAL_BRANCH}"
-        }
-    }
-}
 
         stage('Build') {
+            agent { label 'build-agent' } // Executes on build agent node
             steps {
                 sh 'mvn clean package'
             }
         }
 
         stage('Test') {
+            agent { label 'test-agent' } // Executes on test agent node
             steps {
                 sh 'mvn test'
             }
         }
 
-        stage('Deploy to Staging') {
-            steps {
-                script {
-                    if (env.BRANCH_NAME == 'main') {
-                        echo '✅ Deploying to Staging...'
+        stage('Deploy') {
+            parallel {
+                stage('Deploy to Staging') {
+                    agent { label 'staging-agent' } // Executes on staging node
+                    when {
+                        expression { env.BRANCH_NAME == 'main' }
+                    }
+                    steps {
+                        echo "Deploying to Staging (Branch: ${env.BRANCH_NAME})"
                         sh 'cp target/*.jar /tmp/staging-app.jar'
-                    } else {
-                        echo "🔍 Detected Branch: ${env.BRANCH_NAME}"
-                        echo 'Skipping Staging Deployment (Not on main branch)'
                     }
                 }
-            }
-        }
 
-        stage('Deploy to Production') {
-            steps {
-                script {
-                    if (env.BRANCH_NAME == 'main') {
-                        echo '✅ Deploying to Production...'
+                stage('Deploy to Production') {
+                    agent { label 'prod-agent' } // Executes on production node
+                    when {
+                        expression { env.BRANCH_NAME == 'main' }
+                    }
+                    steps {
+                        echo "Deploying to Production (Branch: ${env.BRANCH_NAME})"
                         sh 'cp target/*.jar /tmp/production-app.jar'
-                    } else {
-                        echo "🔍 Detected Branch: ${env.BRANCH_NAME}"
-                        echo 'Skipping Production Deployment (Not on main branch)'
                     }
                 }
             }
@@ -71,8 +65,8 @@ pipeline {
                 script {
                     def fileExistsProd = sh(script: "[ -f /tmp/production-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
                     def fileExistsStaging = sh(script: "[ -f /tmp/staging-app.jar ] && echo 'FOUND' || echo 'NOT FOUND'", returnStdout: true).trim()
-                    echo "JAR File Status in Production: ${fileExistsProd}"
-                    echo "JAR File Status in Staging: ${fileExistsStaging}"
+                    echo " JAR File in Production: ${fileExistsProd}"
+                    echo " JAR File in Staging: ${fileExistsStaging}"
                 }
             }
         }
@@ -80,13 +74,13 @@ pipeline {
 
     post {
         always {
-            echo '📢 Pipeline execution completed!'
+            echo 'Pipeline execution completed!'
         }
         success {
-            echo '✅ Build and deployment successful!'
+            echo 'Build and deployment successful!'
         }
         failure {
-            echo '❌ Pipeline failed! Notifying team...'
+            echo 'Pipeline failed! Check logs for more details.'
         }
     }
 }
